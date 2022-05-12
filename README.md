@@ -4,4 +4,4 @@
 </p>
 
 # em240
-A Rust program emulating a RISC240 processor
+A Rust program emulating a RISC240 processor, a processor modeled on an ISA similar to RISC-V for the educational purposes of Carnegie Mellon's 18-240.
