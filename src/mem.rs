@@ -1,5 +1,17 @@
+//! Interface for a representation of memory.
+//! 
+//! RISC240 has a 16-bit address space (65536 bytes), where each address is 
+//! byte-addressable. However, RISC240 can only access memory in 16-bit words. 
+//! RISC240 makes use of *automatic word alignment*, replacing the 
+//! least-significant bit of an address with a zero.
+//! 
+//! i.e. `M[0x0052] == M[0x0053]`
+
 use crate::reg::Reg;
 
+/// Representation of memory. Reads from MAR, reads and writes from MDR.
+/// 
+/// Reads and writes are done on 16-bit words.
 pub struct Mem {
     data: [u8; 0x10000],
     mar: Reg,
@@ -7,6 +19,7 @@ pub struct Mem {
 }
 
 impl Mem {
+    /// Creates a new memory module.
     pub fn new(mar: Reg, mdr: Reg) -> Self {
         Mem {
             data: [0x00; 0x10000],
@@ -15,6 +28,7 @@ impl Mem {
         }
     }
 
+    /// Reads from memory at address in MAR and writes into MDR
     pub fn read(&mut self) -> () {
         let addr = self.mar.read() & !(1u16);
         let upper_addr = addr;
@@ -24,6 +38,7 @@ impl Mem {
         self.mdr.write((upper << 8) | (lower));
     }
 
+    /// Writes data in MDR into address in MAR
     pub fn write(&mut self) -> () {
         let addr = self.mar.read() & !(1u16);
         let upper_addr = addr;
