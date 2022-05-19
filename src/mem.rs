@@ -1,11 +1,10 @@
-//! Interface for a representation of memory.
+//! Interface for reading from, writing to, and clearing memory.
 //! 
 //! RISC240 has a 16-bit address space (65536 bytes), where each address is 
 //! byte-addressable. However, RISC240 can only access memory in 16-bit words. 
 //! RISC240 makes use of *automatic word alignment*, replacing the 
-//! least-significant bit of an address with a zero.
-//! 
-//! i.e. `M[0x0052] == M[0x0053]`
+//! least-significant bit of an address with a zero 
+//! (i.e. `M[0x0052] == M[0x0053]`).
 
 use crate::reg::Reg;
 
