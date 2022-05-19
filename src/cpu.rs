@@ -1,5 +1,8 @@
 //! The heart of the RISC240 ISA
 
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use crate::reg::*;
 use crate::mem::*;
 
@@ -25,6 +28,61 @@ impl Instr {
             rs1: ((word & Self::RS1_MASK) >> 6) as u8,
             rs2: ((word & Self::RS2_MASK) >> 3) as u8
         }
+    }
+}
+
+pub enum ConditionCode {
+    Z, C, N, V, ALL, NONE
+}
+
+pub struct CC {
+    codes: Rc<RefCell<u8>>
+}
+
+impl Clone for CC {
+    fn clone(&self) -> Self {
+        CC { codes: self.codes.clone() }
+    }
+}
+
+impl CC {
+    const ALL: u8 = 0b1111;
+    const NONE: u8 = 0b0000;
+    const ZERO: u8 = 0b1000;
+    const CARRY: u8 = 0b0100;
+    const NEGATIVE: u8 = 0b0010;
+    const OVERFLOW: u8 = 0b0001;
+
+    pub fn new() -> Self {
+        CC {
+            codes: Rc::new(RefCell::new(0b0000u8))
+        }
+    }
+
+    fn flag(code: ConditionCode) -> u8 {
+        match code {
+            ConditionCode::Z => Self::ZERO,
+            ConditionCode::C => Self::CARRY,
+            ConditionCode::N => Self::NEGATIVE,
+            ConditionCode::V => Self::OVERFLOW,
+            ConditionCode::ALL => Self::ALL,
+            ConditionCode::NONE => Self::NONE,
+        }
+    }
+
+    pub fn get(&self, code: ConditionCode) -> bool {
+        let codes = *self.codes.borrow();
+        codes & Self::flag(code) != 0b0000u8
+    }
+
+    pub fn set(&mut self, code: ConditionCode) -> () {
+        let codes = *self.codes.borrow();
+        self.codes.replace(codes | Self::flag(code));
+    }
+
+    pub fn reset(&mut self, code: ConditionCode) -> () {
+        let codes = *self.codes.borrow();
+        self.codes.replace(codes & !Self::flag(code));
     }
 }
 
@@ -71,27 +129,28 @@ impl CPU {
     fn execute(&mut self, instr: Instr) -> ()  {
         match instr.opcode {
             0x00 => { // ADD rd, rs1, rs2
-                let (rs1, rs2) = self.rf.read(instr.rs1, instr.rs2);
-                self.rf.write(rs1 + rs2, instr.rd);
+                self.rf.select(Some(instr.rs1), Some(instr.rs2), None, None);
+                // let (rs1, rs2) = self.rf.read();
+                // self.rf.write(rs1 + rs2, instr.rd);
             }
             0x18 => { // ADDI rd, rs1, imm | LI rd, imm
-                let (rs1, _) = self.rf.read(instr.rs1, instr.rs2);
-                self.pc.write(self.pc.read() + 2);
-                self.mar.write(self.pc.read());
-                self.mem.read();
-                self.rf.write(rs1 + self.mdr.read(), instr.rd);
+                // let (rs1, _) = self.rf.read(instr.rs1, instr.rs2);
+                // self.pc.write(self.pc.read() + 2);
+                // self.mar.write(self.pc.read());
+                // self.mem.read();
+                // self.rf.write(rs1 + self.mdr.read(), instr.rd);
             }
             0x48 => { // AND rd, rs1, rs2
-                let (rs1, rs2) = self.rf.read(instr.rs1, instr.rs2);
-                self.rf.write(rs1 & rs2, instr.rd);
+                // let (rs1, rs2) = self.rf.read(instr.rs1, instr.rs2);
+                // self.rf.write(rs1 & rs2, instr.rd);
             }
             0x7C => { // BRA addr
-
+                
             }
             0x54 => { // BRC addr
 
             }
-            0x4C => { // BRN addr
+            0x4C => { // BRN addr 
 
             }
             0x6C => { // BRNZ addr
@@ -153,7 +212,6 @@ impl CPU {
             }
             _ => ()
         }
-        self.pc.write(self.pc.read() + 2);
     }
 
     pub fn run(&mut self) {
@@ -163,6 +221,7 @@ impl CPU {
             self.fetch();
             let instr = self.decode();
             self.execute(instr);
+            self.pc.write(self.pc.read() + 2);
         }
     }
 }
